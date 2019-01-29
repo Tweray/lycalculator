@@ -1,0 +1,340 @@
+<html>
+
+<head>
+    <title>LY Calculator</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <style>
+        body {
+            font-size: 20px;
+        }
+
+        input {
+            font-size: 1em;
+            display: block;
+        }
+
+        label {
+            font-size: 1em;
+        }
+
+        .small {
+            font-size: 0.5em;
+        }
+
+        button {
+            font-size: 1em;
+            cursor: pointer;
+            margin-right: 20px;
+        }
+
+        .bottompadding{
+            padding-bottom: 1em;
+        }
+
+        .outerpadding {
+            width: 90%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            float: none;
+        }
+
+        .display_console {
+            border: 1px solid grey;
+            background: #EEE;
+            min-height: 500px;
+            padding: 10px;
+            font-size: 0.8em;
+        }
+
+        .clickable {
+            cursor: pointer;
+        }
+
+        .tablerow>div {
+            width: 25%;
+            float: left;
+        }
+
+        table {
+            border-top: 1px solid grey;
+            border-left: 1px solid grey;
+
+            width: 100%;
+        }
+
+        td, th{
+            border-right: 1px solid grey;
+            text-align: center;
+            border-bottom: 1px solid grey;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="outerpadding">
+        <h2>System Distance Calculator</h2>
+
+        <div class="bottompadding">
+            <input id="SystemFrom" type="text" placeholder="From" autofocus />
+        </div>
+        <div class="bottompadding">
+            <input id="SystemTo" type="text" placeholder="To" />
+        </div>
+        <div class="bottompadding">
+            <input id="Calculate" type="submit" value="GO!" />
+        </div>
+        <div class="bottompadding">
+            <h3 id="Distance">
+                Jump Distance:
+            </h3>
+
+            <table id="JumpChart">
+                <tr>
+                    <th style="width: 25%;">
+                        Ship
+                    </th>
+                    <th>
+                        JDC0
+                    </th>
+                    <th>
+                        JDC1
+                    </th>
+                    <th>
+                        JDC2
+                    </th>
+                    <th>
+                        JDC3
+                    </th>
+                    <th>
+                        JDC4
+                    </th>
+                    <th>
+                        JDC5
+                    </th>
+                </tr>
+                <tr class="jumpRow">
+                    <td style="width: 30%;">
+                        Dread / Carrier / FAX
+                    </td>
+                    <td>
+                        3.5 ly
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                </tr>
+                <tr class="jumpRow">
+                    <td style="width: 30%;">
+                        Supercarrier / Titan
+                    </td>
+                    <td>
+                        3 ly
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                </tr>
+                <tr class="jumpRow">
+                    <td style="width: 30%;">
+                        Blop
+                    </td>
+                    <td>
+                        4 ly
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                </tr>
+                <tr class="jumpRow">
+                    <td style="width: 30%;">
+                        JF / Rorq
+                    </td>
+                    <td>
+                        5 ly
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js" integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="
+        crossorigin="anonymous"></script>
+    <script>
+        $(function () {
+            var app = function () {
+                var systems = {};
+
+                var init = function () {
+                    $.get("https://esi.evetech.net/latest/universe/systems/?datasource=tranquility")
+                        .then(function (data) {
+                            for (var i = 0; i < data.length; i = i + 1000) {
+                                var subData = data.slice(i, i + 1000);
+                                fetchNames(subData);
+                            }
+                        });
+
+                    bindAutocomplete("#SystemFrom");
+                    bindAutocomplete("#SystemTo");
+
+                    $("#Calculate").click(calculate);
+
+                    $("input").keyup(function (e) {
+                        var keycode = (e.keyCode ? e.keyCode : e.which);
+                        if (keycode == '13') {
+                            calculate();
+                        }
+                    });
+
+                    $(".jumpRow").each(function (i, e) {
+                        var basely = $(e).find("td:nth-child(2)").html().replace(" ly", "");
+
+                        for (var i = 3; i < 8; i++) {
+                            var ly = (basely * (1 + 0.2 * (i - 2))).toFixed(1);
+
+                            $(e).find(`td:nth-child(${i})`).html(`${ly} ly`)
+                        }
+                    });
+                };
+
+                var calculate = function () {
+                    var from = $("#SystemFrom").val().toUpperCase();
+                    var to = $("#SystemTo").val().toUpperCase();
+
+                    if (systems[from] === undefined || systems[to] === undefined) {
+                        return;
+                    }
+
+                    fetchSystemDetail(from, false);
+                    fetchSystemDetail(to, false);
+
+
+                    var x1 = systems[from].detail.position.x;
+                    var y1 = systems[from].detail.position.y;
+                    var z1 = systems[from].detail.position.z;
+                    var x2 = systems[to].detail.position.x;
+                    var y2 = systems[to].detail.position.y;
+                    var z2 = systems[to].detail.position.z;
+
+                    var distance = Math.ceil(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2) + Math.pow((z1 - z2), 2)) / 9460000000000000 * 1000) / 1000;
+
+                    $("#Distance").html(`Jump Distance:  ${distance} ly`);
+
+                    $(".jumpRow td").each(function (i, e) {
+                        var h = $(e).html();
+
+                        if(h.indexOf("ly") < 0) return;
+
+                        var ly = h.replace(" ly","");
+
+                        console.log(ly);
+
+                        if(ly > distance){
+                            $(e).css("background", "rgba(0,255,0,0.3)");
+                        }
+                        else{
+                            $(e).css("background", "rgba(255,0,0,0.3)");
+                        }
+                    });
+                };
+
+                var bindAutocomplete = function (e) {
+                    $(e).autocomplete({
+                        source: function (request, response) {
+                            var matches = $.map(Object.keys(systems), function (acItem) {
+                                if (acItem.toUpperCase().indexOf(request.term.toUpperCase()) === 0) {
+                                    return acItem;
+                                }
+
+                                if (acItem.replace("-", "").toUpperCase().indexOf(request.term.toUpperCase()) === 0) {
+                                    return acItem;
+                                }
+                            });
+                            response(matches.slice(0, 10));
+                        },
+                        select: function (event, ui) {
+                            fetchSystemDetail(ui.item.value);
+                        },
+                    });
+                };
+
+                var fetchSystemDetail = function (s, async = true) {
+
+                    if (s.length < 1) return;
+
+                    if (systems[s.toUpperCase()].withDetail === true) {
+                        return;
+                    }
+
+                    var systemId = systems[s.toUpperCase()].id;
+
+                    $.get({
+                        url: `https://esi.evetech.net/latest/universe/systems/${systemId}/?datasource=tranquility`,
+                        async: async,
+                        success: function (data) {
+                            systems[s.toUpperCase()].detail = data;
+                            systems[s.toUpperCase()].withDetail = true;
+                        }
+                    });
+
+                };
+
+                var fetchNames = function (d) {
+                    $.post({
+                        url: "https://esi.evetech.net/latest/universe/names/?datasource=tranquility",
+                        contentType: "application/json",
+                        data: JSON.stringify(d)
+                    }).then(function (data) {
+                        data.forEach(e => {
+                            systems[e.name.toUpperCase()] = e;
+                            systems[e.name.toUpperCase()].withDetail = false;
+                        });
+                    });
+                };
+
+                return {
+                    init: init,
+                    systems: systems
+                };
+            };
+            var one = app();
+            one.init();
+        });
+    </script>
+</body>
+
+</html>
