@@ -199,10 +199,6 @@
             var app = function () {
                 var systems = {};
 
-                var urlParams = new URLSearchParams(window.location.search);
-                var from = urlParams.get('from');
-                var to = urlParams.get('to');
-
                 var init = function () {
                     $.get("https://esi.evetech.net/latest/universe/systems/?datasource=tranquility")
                         .then(function (data) {
@@ -234,12 +230,16 @@
                         }
                     });
 
-                    if (from != undefined) {
-                        $("#SystemFrom").val(from);
+                    var urlParams = new URLSearchParams(window.location.search);
+                    var urlFrom = urlParams.get('from');
+                    var urlTo = urlParams.get('to');
+
+                    if (urlFrom != undefined) {
+                        $("#SystemFrom").val(urlFrom);
                     }
 
-                    if (to != undefined) {
-                        $("#SystemTo").val(to);
+                    if (urlTo != undefined) {
+                        $("#SystemTo").val(urlTo);
                     }
 
                     if ($("#SystemFrom").val() != undefined && $("#SystemTo").val() != undefined) {
