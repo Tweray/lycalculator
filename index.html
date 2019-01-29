@@ -230,6 +230,14 @@
                         }
                     });
 
+                    initByUrl();
+
+                    window.addEventListener('popstate', function (event) {
+                        initByUrl();
+                    });
+                };
+
+                var initByUrl = function () {
                     var urlParams = new URLSearchParams(window.location.search);
                     var urlFrom = urlParams.get('from');
                     var urlTo = urlParams.get('to');
@@ -245,6 +253,7 @@
                     if ($("#SystemFrom").val() != undefined && $("#SystemTo").val() != undefined) {
                         calculate();
                     }
+
                 };
 
                 var calculate = function () {
@@ -281,9 +290,16 @@
                         }
                     });
 
-                    var rawurl = window.location.href.split('?')[0];
+                    var oldurl = window.location.href;
+
+                    var rawurl = oldurl.split('?')[0];
 
                     var newurl = rawurl + `?from=${from}&to=${to}`;
+
+                    if(oldurl.toUpperCase() === newurl.toUpperCase())
+                    {
+                        return;
+                    }
 
                     window.history.pushState("", "", newurl);
                 };
