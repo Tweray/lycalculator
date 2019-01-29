@@ -199,12 +199,16 @@
             var app = function () {
                 var systems = {};
 
+                var urlParams = new URLSearchParams(window.location.search);
+                var from = urlParams.get('from');
+                var to = urlParams.get('to');
+
                 var init = function () {
                     $.get("https://esi.evetech.net/latest/universe/systems/?datasource=tranquility")
                         .then(function (data) {
                             for (var i = 0; i < data.length; i = i + 1000) {
                                 var subData = data.slice(i, i + 1000);
-                                fetchNames(subData);
+                                fetchNames(subData, data.length);
                             }
                         });
 
@@ -229,15 +233,23 @@
                             $(e).find(`td:nth-child(${i})`).html(`${ly} ly`)
                         }
                     });
+
+                    if (from != undefined) {
+                        $("#SystemFrom").val(from);
+                    }
+
+                    if (to != undefined) {
+                        $("#SystemTo").val(to);
+                    }
+
+                    if ($("#SystemFrom").val() != undefined && $("#SystemTo").val() != undefined) {
+                        calculate();
+                    }
                 };
 
                 var calculate = function () {
                     var from = $("#SystemFrom").val().toUpperCase();
                     var to = $("#SystemTo").val().toUpperCase();
-
-                    if (systems[from] === undefined || systems[to] === undefined) {
-                        return;
-                    }
 
                     fetchSystemDetail(from, false);
                     fetchSystemDetail(to, false);
@@ -257,17 +269,23 @@
                     $(".jumpRow td").each(function (i, e) {
                         var h = $(e).html();
 
-                        if(h.indexOf("ly") < 0) return;
+                        if (h.indexOf("ly") < 0) return;
 
-                        var ly = h.replace(" ly","");
+                        var ly = h.replace(" ly", "");
 
-                        if(ly > distance){
+                        if (ly > distance) {
                             $(e).css("background", "rgba(0,255,0,0.3)");
                         }
-                        else{
+                        else {
                             $(e).css("background", "rgba(255,0,0,0.3)");
                         }
                     });
+
+                    var rawurl = window.location.href.split('?')[0];
+
+                    var newurl = rawurl + `?from=${from}&to=${to}`;
+
+                    window.history.pushState("", "", newurl);
                 };
 
                 var bindAutocomplete = function (e) {
@@ -275,11 +293,11 @@
                         source: function (request, response) {
                             var matches = $.map(Object.keys(systems), function (acItem) {
                                 if (acItem.toUpperCase().indexOf(request.term.toUpperCase()) === 0) {
-                                    return acItem;
+                                    return systems[acItem].name;
                                 }
 
                                 if (acItem.replace("-", "").toUpperCase().indexOf(request.term.toUpperCase()) === 0) {
-                                    return acItem;
+                                    return systems[acItem].name;
                                 }
                             });
                             response(matches.slice(0, 10));
@@ -293,6 +311,10 @@
                 var fetchSystemDetail = function (s, async = true) {
 
                     if (s.length < 1) return;
+
+                    if (systems[s.toUpperCase()] === undefined) {
+                        fetchSingleSystemByName(s);
+                    }
 
                     if (systems[s.toUpperCase()].withDetail === true) {
                         return;
@@ -311,7 +333,22 @@
 
                 };
 
-                var fetchNames = function (d) {
+                var fetchSingleSystemByName = function (n) {
+                    $.post({
+                        url: "https://esi.evetech.net/latest/universe/ids/?datasource=tranquility",
+                        async: false,
+                        contentType: "application/json",
+                        data: JSON.stringify(
+                            [n]
+                        ),
+                        success: function (data) {
+                            systems[n.toUpperCase()] = data.systems[0];
+                            systems[n.toUpperCase()].withDetail = false;
+                        }
+                    });
+                };
+
+                var fetchNames = function (d, t) {
                     $.post({
                         url: "https://esi.evetech.net/latest/universe/names/?datasource=tranquility",
                         contentType: "application/json",
